@@ -1,0 +1,203 @@
+{
+  "best_model": "Gradient Boosting",
+  "test_metrics": {
+    "Logistic Regression": {
+      "accuracy": 0.9149404086265607,
+      "precision": 0.5601882985877606,
+      "recall": 0.604499274310595,
+      "f1": 0.581500872600349,
+      "roc_auc": 0.8895068553055896,
+      "pr_auc": 0.6048446833909881,
+      "brier": 0.14360764625243383,
+      "threshold": 0.7921614219526844,
+      "cv_pr_auc": 0.5013633130499442,
+      "best_params": {
+        "logisticregression__C": 0.01
+      }
+    },
+    "Random Forest": {
+      "accuracy": 0.9198354143019296,
+      "precision": 0.5929535232383808,
+      "recall": 0.5740203193033382,
+      "f1": 0.5833333333333334,
+      "roc_auc": 0.8899201410706423,
+      "pr_auc": 0.6146060859830756,
+      "brier": 0.09768769313834134,
+      "threshold": 0.7339352625478458,
+      "cv_pr_auc": 0.5024999404038001,
+      "best_params": {
+        "n_estimators": 150,
+        "min_samples_leaf": 20,
+        "max_features": "sqrt",
+        "max_depth": null
+      }
+    },
+    "Gradient Boosting": {
+      "accuracy": 0.914727582292849,
+      "precision": 0.5582781456953643,
+      "recall": 0.611756168359942,
+      "f1": 0.5837950138504155,
+      "roc_auc": 0.8906087129289573,
+      "pr_auc": 0.6205520104424453,
+      "brier": 0.05573868941729096,
+      "threshold": 0.2652053000494179,
+      "cv_pr_auc": 0.5129787244658311,
+      "best_params": {
+        "min_samples_leaf": 50,
+        "max_leaf_nodes": 31,
+        "max_depth": 6,
+        "learning_rate": 0.03,
+        "l2_regularization": 1.0
+      }
+    }
+  },
+  "ablation": {
+    "pr_auc_without_history": 0.6070056846524835,
+    "roc_auc_without_history": 0.8878120584267273
+  },
+  "severity_report": {
+    "none": {
+      "precision": 0.9822971548998947,
+      "recall": 0.7329768831577292,
+      "f1-score": 0.8395172910662824,
+      "support": 12718.0
+    },
+    "minor": {
+      "precision": 0.10281870595771941,
+      "recall": 0.5136,
+      "f1-score": 0.17133706965572457,
+      "support": 625.0
+    },
+    "moderate": {
+      "precision": 0.3094245204336947,
+      "recall": 0.7761506276150628,
+      "f1-score": 0.44245676803816336,
+      "support": 478.0
+    },
+    "severe": {
+      "precision": 0.7087719298245614,
+      "recall": 0.7345454545454545,
+      "f1-score": 0.7214285714285714,
+      "support": 275.0
+    },
+    "accuracy": 0.724744608399546,
+    "macro avg": {
+      "precision": 0.5258280777789676,
+      "recall": 0.6893182413295617,
+      "f1-score": 0.5436849250471855,
+      "support": 14096.0
+    },
+    "weighted avg": {
+      "precision": 0.915148560493012,
+      "recall": 0.724744608399546,
+      "f1-score": 0.7941227134350813,
+      "support": 14096.0
+    }
+  },
+  "severity_confusion": [
+    [
+      9322,
+      2749,
+      619,
+      28
+    ],
+    [
+      167,
+      321,
+      137,
+      0
+    ],
+    [
+      1,
+      51,
+      371,
+      55
+    ],
+    [
+      0,
+      1,
+      72,
+      202
+    ]
+  ],
+  "hotspot_recall_top10pct_100mm": 0.675,
+  "hotspot_recall_top10pct_100mm_no_history": 0.425,
+  "zone_summary_100mm": [
+    {
+      "zone": "Mahadevapura",
+      "mean_flood_prob": 0.118,
+      "high_risk_cells": 11
+    },
+    {
+      "zone": "Bommanahalli",
+      "mean_flood_prob": 0.117,
+      "high_risk_cells": 12
+    },
+    {
+      "zone": "East",
+      "mean_flood_prob": 0.1,
+      "high_risk_cells": 10
+    },
+    {
+      "zone": "Yelahanka",
+      "mean_flood_prob": 0.095,
+      "high_risk_cells": 5
+    },
+    {
+      "zone": "RR Nagar",
+      "mean_flood_prob": 0.092,
+      "high_risk_cells": 5
+    },
+    {
+      "zone": "South",
+      "mean_flood_prob": 0.087,
+      "high_risk_cells": 3
+    },
+    {
+      "zone": "Dasarahalli",
+      "mean_flood_prob": 0.082,
+      "high_risk_cells": 1
+    },
+    {
+      "zone": "West",
+      "mean_flood_prob": 0.079,
+      "high_risk_cells": 1
+    }
+  ],
+  "feature_importance": {
+    "excess_over_drain_mm_hr": 0.34848,
+    "low_lying_m": 0.05815,
+    "dist_known_hotspot_km": 0.02616,
+    "dist_primary_drain_km": 0.0226,
+    "runoff_index": 0.00668,
+    "rain_24h_mm": 0.00629,
+    "hist_flood_count_2015_24": 0.00132,
+    "lake_overflow_index": 0.00099,
+    "drain_density_km_per_km2": 0.00072,
+    "lake_encroachment_index": 0.00051,
+    "impervious_frac": 0.0005,
+    "peak_hourly_mm": 0.00043,
+    "drain_silt_index": 0.0002,
+    "lu_Residential": 7e-05,
+    "nearest_lake_area_ha": 7e-05,
+    "lu_Peri-urban": 5e-05,
+    "monsoon_peak": 1e-05,
+    "month": 0.0,
+    "lakes_within_2km": 0.0,
+    "lu_IT Park": 0.0,
+    "lu_Green/Open": 0.0,
+    "lu_Commercial": 0.0,
+    "lu_Industrial": 0.0,
+    "drain_capacity_mm_hr": -0.00017,
+    "dist_lake_km": -0.00019,
+    "green_cover_frac": -0.00023,
+    "antecedent_3day_mm": -0.00024,
+    "road_density_km_per_km2": -0.00028,
+    "slope_pct": -0.00038,
+    "elevation_m": -0.00039,
+    "pop_density_per_km2": -0.00046,
+    "lake_area_within_3km_ha": -0.00082
+  },
+  "n_train_rows": 56384,
+  "n_test_rows": 14096
+}

@@ -1,0 +1,11 @@
+numpy
+pandas
+scipy
+scikit-learn
+matplotlib
+joblib
+jupyter
+# optional
+xgboost
+osmnx
+networkx
