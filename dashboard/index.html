@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NIRVANA · Bengaluru Flood Resilience Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="leaflet-fallback.js"></script>
+<script src="data.js"></script>
+<style>
+  :root{--bg:#f6f7f9;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--accent:#1d4ed8;--good:#15803d;--bad:#b91c1c}
+  *{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:#0b1f3a;color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  header h1{font-size:18px;margin:0;font-weight:650} header p{margin:2px 0 0;font-size:12.5px;color:#cbd5e1}
+  .tabs{display:flex;gap:6px} .tab{background:transparent;color:#cbd5e1;border:1px solid #334155;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:13px}
+  .tab.active{background:#fff;color:#0b1f3a;border-color:#fff;font-weight:600}
+  main{padding:18px 24px;max-width:1500px;margin:0 auto}
+  .grid{display:grid;grid-template-columns:300px 1fr;gap:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .card h3{margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
+  label{display:block;font-size:13px;font-weight:600;margin:14px 0 6px} label:first-of-type{margin-top:0}
+  .val{float:right;color:var(--accent);font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%} select{width:100%;padding:7px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff}
+  .chk{display:flex;align-items:center;gap:8px;font-size:13px;margin:8px 0;font-weight:500} .chk input{width:16px;height:16px}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.4}
+  #map{height:560px;border-radius:12px;border:1px solid var(--line)}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  .kpi .n{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums} .kpi .l{font-size:12px;color:var(--muted);margin-top:2px}
+  .kpi .d{font-size:12px;margin-top:6px;font-weight:600}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+  table{width:100%;border-collapse:collapse;font-size:13px} th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
+  th{font-size:11.5px;color:var(--muted);font-weight:600;text-transform:uppercase} td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  .bar{height:16px;background:#f97316;border-radius:3px}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:600}
+  .legend{background:#fff;padding:8px 10px;border-radius:8px;font-size:12px;line-height:1.6;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+  .legend i{display:inline-block;width:14px;height:10px;margin-right:6px;vertical-align:middle}
+  .result{margin-top:12px;font-size:13px;line-height:1.6;background:#f8fafc;border-radius:8px;padding:10px;border:1px solid var(--line)}
+  .hidden{display:none} .figs{display:grid;grid-template-columns:1fr 1fr;gap:16px} .figs img{width:100%;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .note{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.5}
+  @media(max-width:1000px){.grid,.row2,.figs{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>NIRVANA · Bengaluru Flood Resilience Decision System</h1>
+    <p>Module 1: ML flood-risk prediction &amp; what-if simulator · ~1 km cells across the city</p></div>
+  <div class="tabs"><button class="tab active" data-tab="planner">Planner dashboard</button>
+    <button class="tab" data-tab="public">Public view</button><button class="tab" data-tab="model">Model performance</button></div>
+</header>
+<main>
+  <section id="tab-planner">
+    <div class="kpis">
+      <div class="card kpi"><div class="n" id="k-cells">–</div><div class="l">Areas (km²) predicted to flood</div><div class="d" id="d-cells"></div></div>
+      <div class="card kpi"><div class="n" id="k-people">–</div><div class="l">Expected people affected</div><div class="d" id="d-people"></div></div>
+      <div class="card kpi"><div class="n" id="k-severe">–</div><div class="l">Areas with moderate/severe flooding</div><div class="d" id="d-severe"></div></div>
+      <div class="card kpi"><div class="n" id="k-hosp">–</div><div class="l">Hospitals in flood-risk areas</div><div class="d" id="d-hosp"></div></div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3>Scenario</h3>
+        <label>24-hour rainfall <span class="val" id="v-rain"></span></label>
+        <input type="range" id="rain" min="0" max="6" step="1" value="2">
+        <div class="hint">Bengaluru's worst recent days were ~130–180 mm (Sept 2022, Oct 2024).</div>
+        <h3 style="margin-top:22px">Interventions</h3>
+        <label>Drain capacity upgrade</label>
+        <select id="drain"><option value="0">None</option><option value="15">+15%</option><option value="30">+30%</option><option value="50">+50%</option></select>
+        <div class="chk"><input type="checkbox" id="desilt"><span>Desilt storm-water drains</span></div>
+        <div class="chk"><input type="checkbox" id="green"><span>Green infrastructure (10% less concrete)</span></div>
+        <h3 style="margin-top:22px">Map layers</h3>
+        <div class="chk"><input type="checkbox" id="l-hot" checked><span>BBMP/KSNDMC flood hotspots</span></div>
+        <div class="chk"><input type="checkbox" id="l-lake" checked><span>Lakes</span></div>
+        <div class="chk"><input type="checkbox" id="l-hosp" checked><span>Hospitals</span></div>
+        <div class="note">Change the sliders and the model's predictions update instantly. Click any square on the map for details.</div>
+      </div>
+      <div id="map"></div>
+    </div>
+    <div class="row2">
+      <div class="card"><h3>Zone vulnerability ranking</h3><table id="zones"></table></div>
+      <div class="card"><h3>Highest-risk areas</h3><table id="top"></table></div>
+    </div>
+    <div class="card" style="margin-top:16px"><h3>Hospitals at risk</h3><table id="hosp"></table></div>
+  </section>
+
+  <section id="tab-public" class="hidden">
+    <div class="grid">
+      <div class="card">
+        <h3>Check my area</h3>
+        <label>Locality</label><select id="loc"></select>
+        <label>Expected rainfall <span class="val" id="v-rain2"></span></label>
+        <input type="range" id="rain2" min="0" max="6" step="1" value="2">
+        <div class="result" id="locres"></div>
+      </div>
+      <div id="map2" style="height:560px;border-radius:12px;border:1px solid var(--line)"></div>
+    </div>
+  </section>
+
+  <section id="tab-model" class="hidden">
+    <div class="card"><h3>Model comparison (tested on the 16 most recent storms, never seen in training)</h3><table id="mtab"></table>
+      <div class="note" id="mnote"></div></div>
+    <div class="figs" style="margin-top:16px">
+      <img src="../outputs/figures/01_roc_pr_curves.png" alt="ROC and PR curves"><img src="../outputs/figures/02_confusion_matrices.png" alt="Confusion matrices">
+      <img src="../outputs/figures/03_feature_importance.png" alt="Feature importance"><img src="../outputs/figures/05_rainfall_response.png" alt="Rainfall response">
+    </div>
+    <div class="card note" style="margin-top:16px">Data: real BBMP/KSNDMC flood hotspots, lakes, primary drainage valleys and hospitals anchor the dataset; terrain, drain capacity and storm-by-storm flood outcomes are simulated because cell-level flood records are not publicly available. See DATA_SOURCES.md.</div>
+  </section>
+</main>
+
+<script>
+const D = window.FLOOD_DATA, C = D.cells, N = C.id.length;
+const RAINS = [50,75,100,125,150,175,200], THR = D.threshold;
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('en-IN');
+const color = p => p>=60?'#7f1d1d':p>=40?'#b91c1c':p>=25?'#ef4444':p>=12?'#f97316':p>=5?'#fdba74':'#fef3c7';
+const sevName = ['None','Minor (<15 cm)','Moderate (15–45 cm)','Severe (>45 cm)'];
+const riskPill = p => p>=THR ? `<span class="pill" style="background:#fee2e2;color:#991b1b">High · ${p}%</span>` :
+  p>=THR/2 ? `<span class="pill" style="background:#ffedd5;color:#9a3412">Moderate · ${p}%</span>` : `<span class="pill" style="background:#dcfce7;color:#166534">Low · ${p}%</span>`;
+function dist(a,b,c,d){const x=(d-b)*108.3, y=(c-a)*110.6; return Math.hypot(x,y);}
+function nearestCell(lat,lon){let b=0,bd=1e9;for(let i=0;i<N;i++){const d=dist(lat,lon,C.lat[i],C.lon[i]);if(d<bd){bd=d;b=i}}return b;}
+const label = C.id.map((_,i)=>{let best=null,bd=1.5;D.hotspots.forEach(h=>{const d=dist(C.lat[i],C.lon[i],h[1],h[2]);if(d<bd){bd=d;best=h[0]}});return best||('Near '+C.zone[i]+' zone');});
+const hospCell = D.hospitals.map(h=>nearestCell(h[1],h[2]));
+
+function makeMap(el){
+  const m = L.map(el,{zoomControl:true}).setView([12.97,77.6],11);
+  L.tileLayer('https://{s}.basemap.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',maxZoom:18}).addTo(m);
+  const cells = C.id.map((_,i)=>L.rectangle([[C.lat[i]-0.0045,C.lon[i]-0.00465],[C.lat[i]+0.0045,C.lon[i]+0.00465]],{weight:0,fillOpacity:0.62}).addTo(m));
+  const hot = L.layerGroup(D.hotspots.map(h=>L.circleMarker([h[1],h[2]],{radius:4,color:'#111827',weight:1.5,fillOpacity:0}).bindTooltip(h[0]))).addTo(m);
+  const lake = L.layerGroup(D.lakes.map(l=>L.circleMarker([l[1],l[2]],{radius:Math.max(4,Math.sqrt(l[3])/2.2),color:'#0284c7',weight:1,fillColor:'#38bdf8',fillOpacity:.8}).bindTooltip(l[0]))).addTo(m);
+  const hosp = L.layerGroup(D.hospitals.map(h=>L.marker([h[1],h[2]],{icon:L.divIcon({html:'<div style="background:#15803d;color:#fff;font-weight:700;width:18px;height:18px;border-radius:4px;text-align:center;line-height:18px;font-size:13px">+</div>',className:'',iconSize:[18,18]})}).bindTooltip(h[0]))).addTo(m);
+  const lg = L.control({position:'bottomright'}); lg.onAdd=()=>{const d=L.DomUtil.create('div','legend');
+    d.innerHTML='<b>Flood probability</b><br>'+[[60,'≥ 60%'],[40,'40–60%'],[25,'25–40%'],[12,'12–25%'],[5,'5–12%'],[0,'< 5%']].map(([p,t])=>`<i style="background:${color(p)}"></i>${t}`).join('<br>');return d;}; lg.addTo(m);
+  return {m,cells,hot,lake,hosp};
+}
+const M1 = makeMap('map'); let M2 = null;
+
+function key(r,d,s,g){return `${r}_${d}_${s}_${g}`}
+function stats(sc){let cells=0,people=0,sev=0;for(let i=0;i<N;i++){if(sc.p[i]>=THR)cells++;people+=sc.p[i]/100*C.pop[i];if(sc.s[i]>=2)sev++;}
+  const hosp=hospCell.filter(i=>sc.p[i]>=THR).length;return {cells,people,sev,hosp};}
+function delta(el,now,base,isPeople){const d=now-base;if(!d){$(el).innerHTML='&nbsp;';return}
+  $(el).innerHTML=`<span style="color:${d<0?'var(--good)':'var(--bad)'}">${d<0?'▼':'▲'} ${isPeople?fmt(Math.abs(d)):Math.abs(d)} vs. no intervention</span>`;}
+
+function update(){
+  const r=RAINS[+$('rain').value], d=+$('drain').value, s=$('desilt').checked?1:0, g=$('green').checked?1:0;
+  $('v-rain').textContent=r+' mm';
+  const sc=D.scenarios[key(r,d,s,g)], base=D.scenarios[key(r,0,0,0)];
+  const a=stats(sc), b=stats(base);
+  $('k-cells').textContent=a.cells; $('k-people').textContent=fmt(a.people); $('k-severe').textContent=a.sev; $('k-hosp').textContent=a.hosp+' / '+D.hospitals.length;
+  delta('d-cells',a.cells,b.cells); delta('d-people',a.people,b.people,true); delta('d-severe',a.sev,b.sev); delta('d-hosp',a.hosp,b.hosp);
+  M1.cells.forEach((c,i)=>{c.setStyle({fillColor:color(sc.p[i]),fillOpacity:sc.p[i]<5?0.25:0.65});
+    c.bindPopup(`<b>${label[i]}</b><br>Zone: ${C.zone[i]}<br>Flood probability: <b>${sc.p[i]}%</b><br>Severity if it floods: ${sevName[sc.s[i]]}<br>Elevation: ${C.elev[i]} m · Concrete: ${Math.round(C.imperv[i]*100)}%<br>Drain capacity: ${C.drain[i]} mm/hr`);});
+  // zones
+  const z={}; for(let i=0;i<N;i++){const k=C.zone[i];z[k]=z[k]||{n:0,p:0,f:0,pe:0};z[k].n++;z[k].p+=sc.p[i];if(sc.p[i]>=THR)z[k].f++;z[k].pe+=sc.p[i]/100*C.pop[i];}
+  const zs=Object.entries(z).map(([k,v])=>[k,v.p/v.n,v.f,v.pe]).sort((x,y)=>y[1]-x[1]); const mx=zs[0][1]||1;
+  $('zones').innerHTML='<tr><th>Zone</th><th>Avg. risk</th><th class="num">Flooding km²</th><th class="num">People affected</th></tr>'+
+    zs.map(q=>`<tr><td>${q[0]}</td><td><div class="bar" style="width:${Math.max(4,q[1]/mx*100)}%"></div><span style="font-size:11px;color:var(--muted)">${q[1].toFixed(1)}%</span></td><td class="num">${q[2]}</td><td class="num">${fmt(q[3])}</td></tr>`).join('');
+  // top cells
+  const idx=[...Array(N).keys()].sort((x,y)=>sc.p[y]-sc.p[x]); const seen=new Set(), top=[];
+  for(const i of idx){if(seen.has(label[i]))continue;seen.add(label[i]);top.push(i);if(top.length===10)break;}
+  $('top').innerHTML='<tr><th>Area</th><th>Zone</th><th>Risk</th><th>Severity if flooded</th></tr>'+top.map(i=>`<tr><td>${label[i]}</td><td>${C.zone[i]}</td><td>${riskPill(sc.p[i])}</td><td>${sevName[sc.s[i]]}</td></tr>`).join('');
+  // hospitals
+  const hs=D.hospitals.map((h,j)=>[h,sc.p[hospCell[j]]]).sort((x,y)=>y[1]-x[1]);
+  $('hosp').innerHTML='<tr><th>Hospital</th><th class="num">Beds</th><th>Flood risk around it</th></tr>'+hs.slice(0,8).map(([h,p])=>`<tr><td>${h[0]}</td><td class="num">${fmt(h[3])}</td><td>${riskPill(p)}</td></tr>`).join('');
+}
+['rain','drain','desilt','green'].forEach(id=>$(id).addEventListener('input',update));
+[['l-hot','hot'],['l-lake','lake'],['l-hosp','hosp']].forEach(([id,k])=>$(id).addEventListener('change',e=>e.target.checked?M1[k].addTo(M1.m):M1.m.removeLayer(M1[k])));
+update();
+
+// ---------- public view ----------
+const locs=[...D.hotspots.map(h=>[h[0],h[1],h[2]]),...D.lakes.map(l=>['Near '+l[0],l[1],l[2]])].sort((a,b)=>a[0].localeCompare(b[0]));
+$('loc').innerHTML=locs.map((l,i)=>`<option value="${i}">${l[0]}</option>`).join('');
+let pin=null;
+function updatePublic(){
+  if(!M2) return; const r=RAINS[+$('rain2').value]; $('v-rain2').textContent=r+' mm';
+  const sc=D.scenarios[key(r,0,0,0)], l=locs[+$('loc').value], i=nearestCell(l[1],l[2]);
+  M2.cells.forEach((c,j)=>c.setStyle({fillColor:color(sc.p[j]),fillOpacity:sc.p[j]<5?0.25:0.65}));
+  let hb=null,hd=1e9; D.hospitals.forEach((h,j)=>{const d=dist(l[1],l[2],h[1],h[2]);if(d<hd){hd=d;hb=j}});
+  const hp=sc.p[hospCell[hb]]; const p=sc.p[i];
+  const advice = p>=THR ? 'High risk: avoid travel through this area during heavy rain, move vehicles to higher ground, and keep emergency numbers handy (BBMP control room: 1533).' :
+    p>=THR/2 ? 'Moderate risk: waterlogging is possible on low-lying roads. Check updates before travelling.' : 'Low risk at this rainfall level.';
+  $('locres').innerHTML=`<b>${l[0]}</b><br>Flood risk: ${riskPill(p)}<br>Severity if it floods: ${sevName[sc.s[i]]}<br><br><b>Nearest hospital:</b> ${D.hospitals[hb][0]} (${hd.toFixed(1)} km)<br>Risk around hospital: ${riskPill(hp)}<br><br>${advice}`;
+  if(pin) M2.m.removeLayer(pin); pin=L.marker([l[1],l[2]]).addTo(M2.m).bindTooltip(l[0]).openTooltip(); M2.m.setView([l[1],l[2]],13);
+}
+['loc','rain2'].forEach(id=>$(id).addEventListener('input',updatePublic));
+
+// ---------- model tab ----------
+$('mtab').innerHTML='<tr><th>Model</th><th class="num">Accuracy</th><th class="num">Precision</th><th class="num">Recall</th><th class="num">F1</th><th class="num">ROC-AUC</th><th class="num">PR-AUC</th></tr>'+
+  Object.entries(D.metrics).map(([k,v])=>`<tr style="${k===D.model?'font-weight:700':''}"><td>${k}${k===D.model?' ★ best':''}</td>${['accuracy','precision','recall','f1','roc_auc','pr_auc'].map(m=>`<td class="num">${v[m].toFixed(3)}</td>`).join('')}</tr>`).join('');
+$('mnote').innerHTML=`Only ~8.5% of area-storms flood, so F1 and PR-AUC matter more than accuracy. Severity model macro-F1: <b>${D.severity_f1.toFixed(3)}</b>. Validation: <b>${Math.round(D.hotspot_recall*100)}%</b> of real BBMP/KSNDMC flood hotspots fall in the model's top-10% risk areas at 100 mm (random would be 10%).`;
+
+// ---------- tabs ----------
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));
+  ['planner','public','model'].forEach(t=>$('tab-'+t).classList.toggle('hidden',t!==b.dataset.tab));
+  if(b.dataset.tab==='public'){ if(!M2){M2=makeMap('map2');} setTimeout(()=>{M2.m.invalidateSize();updatePublic();},50); }
+  if(b.dataset.tab==='planner') setTimeout(()=>M1.m.invalidateSize(),50);
+}));
+</script>
+</body>
+</html>

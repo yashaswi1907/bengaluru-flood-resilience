@@ -11,6 +11,15 @@ python src/predict.py --rain 150 --drain-upgrade 30 --desilt     # what-if scena
 ```
 Or open `Bengaluru_Flood_Intelligence.ipynb` and run all cells (it does the same with explanations and charts).
 
+## Run the dashboard (localhost)
+```bash
+python3 -m http.server 8050
+```
+Then open **http://localhost:8050/dashboard/** — interactive Bengaluru flood-risk map, rainfall slider, interventions,
+zone ranking, hospitals at risk, public "check my area" view and model performance. Needs only Python
+(works offline too; the street basemap needs internet). If you retrain the model, refresh the data with
+`python3 dashboard/build_dashboard_data.py`.
+
 ## Dataset
 * **881 grid cells** (~1 km × 1 km) covering the city, **80 storms (2015–2024)** → **70,480 rows**
 * 26 features per cell: elevation, slope, low-lying depth, distance to primary drain, drain density/capacity/silt, lake distance/area/encroachment, impervious & green cover, land use, population density, road density, hospital access, historical flood count
